@@ -1,0 +1,459 @@
+/**
+ * WeirdoPress Image Optimizer Admin Styles
+ */
+
+/* Main layout and container styles */
+.wpio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.wpio-logo h2 {
+    margin: 0;
+    padding: 0;
+    color: #23282d;
+}
+
+.wpio-version {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.wpio-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.wpio-settings {
+    flex: 3;
+}
+
+.wpio-sidebar {
+    flex: 1;
+    min-width: 250px;
+}
+
+@media screen and (max-width: 782px) {
+    .wpio-container {
+        flex-direction: column;
+    }
+    
+    .wpio-sidebar {
+        min-width: 100%;
+    }
+}
+
+/* Form elements */
+.wpio-range {
+    vertical-align: middle;
+    width: 250px;
+    margin-right: 10px;
+}
+
+.wpio-range-value {
+    font-weight: bold;
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+}
+
+/* Binary table styles */
+.wpio-binary-table th {
+    font-weight: 600;
+}
+
+.wpio-binary-table td {
+    vertical-align: middle;
+}
+
+.wpio-status-ok {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.wpio-status-warning {
+    color: #ffb900;
+    font-weight: 600;
+}
+
+.wpio-status-error {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+.wpio-warning {
+    background: #fff8e5;
+    border-left: 4px solid #ffb900;
+    padding: 8px 12px;
+    margin: 10px 0;
+}
+
+.wpio-notice {
+    background: #e5f5fa;
+    border-left: 4px solid #00a0d2;
+    padding: 8px 12px;
+    margin: 10px 0;
+}
+
+/* Sidebar boxes */
+.wpio-box {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+.wpio-box h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.wpio-box ul {
+    margin-left: 1.5em;
+}
+
+/* Environment panel */
+.wpio-environment-panel {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    margin-top: 30px;
+    padding: 20px;
+}
+
+.wpio-environment-panel h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.wpio-env-description {
+    margin-bottom: 20px;
+}
+
+.wpio-env-table {
+    margin-bottom: 20px;
+}
+
+.wpio-env-table th,
+.wpio-env-table td {
+    padding: 10px;
+}
+
+.wpio-env-recommendations {
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    margin-top: 20px;
+}
+
+.wpio-env-recommendations h3 {
+    margin-top: 0;
+}
+
+.wpio-recommendation {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.wpio-recommendation:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.wpio-recommendation-good {
+    background: #ecf7ed;
+    padding: 10px 15px;
+    border-left: 4px solid #46b450;
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+/* Settings form styles */
+.form-table th {
+    width: 250px;
+}
+
+/* Range slider styles */
+.wpio-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wpio-slider {
+    flex: 1;
+}
+
+.wpio-slider-value {
+    width: 50px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Media library column styles */
+.column-wpio_status {
+    width: 120px;
+}
+
+.wpio-details {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #666;
+    display: none;
+}
+
+td.column-wpio_status:hover .wpio-details {
+    display: block;
+}
+
+.wpio-optimization-details {
+    margin-top: 5px;
+    line-height: 1.5;
+}
+
+/* Logs page styles */
+.wpio-logs-container {
+    margin-top: 20px;
+}
+
+.wpio-logs-page table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wpio-logs-page th {
+    text-align: left;
+    padding: 8px;
+}
+
+.wpio-logs-page td {
+    padding: 10px 8px;
+    vertical-align: top;
+}
+
+.wpio-empty-logs {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.wpio-logs-page .wp-list-table {
+    margin-top: 20px;
+}
+
+/* WebP toggle button styles */
+.wpio-format-toggle {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.wpio-toggle-format {
+    display: inline-block;
+    background: #f3f5f6;
+    border: 1px solid #0071a1;
+    color: #0071a1;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 8px 0;
+    line-height: 1.5;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.wpio-toggle-format:hover {
+    background: #f1f1f1;
+    border-color: #016087;
+    color: #016087;
+}
+
+/* Format badge on thumbnails */
+.wpio-format-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 10;
+}
+
+/* Media modal styling */
+.media-frame-content .attachment-details .wpio-format-toggle {
+    margin-top: 15px;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+.attachment-details .wpio-toggle-format {
+    margin-top: 0;
+}
+
+/* Format info in attachment details */
+.wpio-format-info {
+    margin-top: 10px;
+    padding: 8px;
+    background: #f9f9f9;
+    border-left: 3px solid #46b450;
+    font-size: 12px;
+}
+
+.wpio-image-comparison {
+    display: flex;
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+.wpio-image-comparison-half {
+    flex: 1;
+    text-align: center;
+    padding: 5px;
+}
+
+.wpio-image-comparison-half h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+}
+
+.wpio-image-comparison img {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Add styles for the logs page */
+.wpio-logs-page {
+    margin: 20px 0;
+}
+
+.wpio-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.wpio-logs-table th {
+    background-color: #f1f1f1;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px;
+}
+
+.wpio-logs-table td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.wpio-empty-logs {
+    padding: 40px;
+    text-align: center;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.wpio-savings-positive {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.wpio-savings-negative {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+.wpio-conversion-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background-color: #007cba;
+    color: white;
+    border-radius: 3px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.wpio-format-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-right: 5px;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: white;
+}
+
+.wpio-webp-badge {
+    background-color: #3498db;
+}
+
+.wpio-avif-badge {
+    background-color: #9b59b6;
+}
+
+/* Media column styles */
+.column-wpio_status {
+    width: 12%;
+}
+
+.wpio-status-icon {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.wpio-status-optimized {
+    background-color: #46b450;
+}
+
+.wpio-status-not-optimized {
+    background-color: #dc3232;
+}
+
+.wpio-status-processing {
+    background-color: #ffb900;
+}
+
+.wpio-optimization-info {
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.wpio-formats-available {
+    margin-top: 8px;
+    display: flex;
+    gap: 5px;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 782px) {
+    .wpio-logs-table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .column-wpio_status {
+        width: auto;
+    }
+} 

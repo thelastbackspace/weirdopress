@@ -1,0 +1,110 @@
+/**
+ * WeirdoPress Image Optimizer Admin Styles
+ */
+
+/* Main layout and container styles */
+.wpio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.wpio-logo h2 {
+    margin: 0;
+    color: #23282d;
+}
+
+.wpio-version {
+    font-size: 13px;
+    color: #646970;
+}
+
+.wpio-container {
+    display: flex;
+    gap: 20px;
+}
+
+.wpio-settings {
+    flex: 1;
+    min-width: 0;
+}
+
+.wpio-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+@media screen and (max-width: 782px) {
+    .wpio-container {
+        flex-direction: column;
+    }
+    
+    .wpio-sidebar {
+        width: 100%;
+    }
+}
+
+/* Form elements */
+.wpio-range {
+    vertical-align: middle;
+    width: 250px;
+    margin-right: 10px;
+}
+
+.wpio-range-value {
+    font-weight: bold;
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+}
+
+/* Binary table styles */
+.wpio-binary-table th {
+    font-weight: 600;
+}
+
+.wpio-binary-table td {
+    vertical-align: middle;
+}
+
+.wpio-status-ok {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+.wpio-status-error {
+    color: #cc1818;
+    font-weight: 500;
+}
+
+.wpio-warning {
+    background-color: #fcf9e8;
+    border-left: 4px solid #dba617;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+/* Sidebar boxes */
+.wpio-box {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+.wpio-box h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #f0f0f1;
+    padding-bottom: 10px;
+}
+
+.wpio-box ul {
+    margin-left: 1.5em;
+} 
