@@ -1387,22 +1387,28 @@ class WPIO_Admin {
             $this->plugin->file_manager->backup_original( $file_path );
         }
 
-        // Optimize the image
-        $processor = new WPIO_Image_Processor();
-        $result = $processor->optimize_image( $file_path );
+        // Optimize the image using the actual compressor
+        if (!class_exists('WPIO_Compressor')) {
+            require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wpio-compressor.php';
+        }
 
-        if ( ! $result ) {
-            wp_send_json_error( array( 'message' => 'Failed to optimize image.' ) );
+        $compressor = new WPIO_Compressor($this->plugin_name, $this->version);
+        $result = $compressor->optimize_image($file_path);
+
+        if (!$result) {
+            wp_send_json_error(array('message' => 'Failed to optimize image.'));
         }
 
         // Create WebP version if enabled
-        if ( $settings['enable_webp'] ) {
-            $processor->convert_to_webp( $file_path );
+        $webp_path = null;
+        if (isset($settings['enable_webp']) && $settings['enable_webp']) {
+            $webp_path = $compressor->create_webp($file_path);
         }
 
         // Create AVIF version if enabled
-        if ( $settings['enable_avif'] ) {
-            $processor->convert_to_avif( $file_path );
+        $avif_path = null;
+        if (isset($settings['enable_avif']) && $settings['enable_avif']) {
+            $avif_path = $compressor->create_avif($file_path);
         }
 
         // Calculate savings
@@ -1553,7 +1559,17 @@ class WPIO_Admin {
 
                 if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
                     try {
-                        // Backup if needed
+                        // Get original size before optimization
+                        $original_size = filesize($file_path);
+
+                        // Use the actual compressor class
+                        if (!class_exists('WPIO_Compressor')) {
+                            require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wpio-compressor.php';
+                        }
+
+                        $compressor = new WPIO_Compressor($this->plugin_name, $this->version);
+
+                        // Backup if needed (compressor will handle this based on settings)
                         if (isset($settings['preserve_originals']) && $settings['preserve_originals']) {
                             $backup_path = $file_path . '.backup';
                             if (!file_exists($backup_path)) {
@@ -1561,25 +1577,19 @@ class WPIO_Admin {
                             }
                         }
 
-                        // Get original size
-                        $original_size = filesize($file_path);
+                        // Optimize the main image using the actual compressor
+                        $result = $compressor->optimize_image($file_path);
 
-                        // Optimize based on settings
-                        if (isset($settings['compression_preset'])) {
-                            $quality = $settings['jpeg_quality'];
-                        } else {
-                            $quality = 75;
+                        // Create WebP version if enabled
+                        $webp_path = null;
+                        if (isset($settings['enable_webp']) && $settings['enable_webp']) {
+                            $webp_path = $compressor->create_webp($file_path);
                         }
 
-                        // Simple optimization (in real implementation, use your compressor)
-                        if ($extension === 'png' && function_exists('imagepng')) {
-                            $img = imagecreatefrompng($file_path);
-                            imagepng($img, $file_path, 9);
-                            imagedestroy($img);
-                        } elseif (in_array($extension, ['jpg', 'jpeg']) && function_exists('imagejpeg')) {
-                            $img = imagecreatefromjpeg($file_path);
-                            imagejpeg($img, $file_path, $quality);
-                            imagedestroy($img);
+                        // Create AVIF version if enabled
+                        $avif_path = null;
+                        if (isset($settings['enable_avif']) && $settings['enable_avif']) {
+                            $avif_path = $compressor->create_avif($file_path);
                         }
 
                         // Calculate savings
@@ -1588,7 +1598,17 @@ class WPIO_Admin {
                         $savings_percent = $original_size > 0 ? round(($savings / $original_size) * 100, 1) : 0;
 
                         // Update attachment metadata
-                        wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $file_path));
+                        $metadata = wp_generate_attachment_metadata($attachment_id, $file_path);
+
+                        // Add WebP/AVIF info to metadata
+                        if ($webp_path) {
+                            $metadata['webp'] = $webp_path;
+                        }
+                        if ($avif_path) {
+                            $metadata['avif'] = $avif_path;
+                        }
+
+                        wp_update_attachment_metadata($attachment_id, $metadata);
 
                         // Log optimization
                         $optimization_data = array(
@@ -1596,16 +1616,23 @@ class WPIO_Admin {
                             'original_size' => $original_size,
                             'optimized_size' => $optimized_size,
                             'savings_percent' => $savings_percent,
-                            'method' => 'gd'
+                            'method' => isset($result['method']) ? $result['method'] : 'unknown',
+                            'webp_created' => $webp_path ? true : false,
+                            'avif_created' => $avif_path ? true : false
                         );
                         update_post_meta($attachment_id, '_wpio_optimization_data', $optimization_data);
 
                         // Add to logs
+                        $formats = [];
+                        if ($webp_path) $formats[] = 'WebP';
+                        if ($avif_path) $formats[] = 'AVIF';
+                        $format_text = !empty($formats) ? ' (' . implode(' + ', $formats) . ')' : '';
+
                         $logs[] = array(
                             'attachment_id' => $attachment_id,
                             'filename' => basename($file_path),
                             'status' => 'success',
-                            'savings' => $savings_percent . '%'
+                            'savings' => $savings_percent . '%' . $format_text
                         );
 
                     } catch (Exception $e) {
