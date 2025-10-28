@@ -74,8 +74,7 @@ class WPIO {
         $this->load_dependencies();
         $this->set_locale();
         $this->define_admin_hooks();
-        $this->define_public_hooks();
-        $this->define_compressor_hooks();
+        $this->define_compress_hooks();
     }
 
     /**
@@ -86,7 +85,6 @@ class WPIO {
      * - WPIO_Loader. Orchestrates the hooks of the plugin.
      * - WPIO_i18n. Defines internationalization functionality.
      * - WPIO_Admin. Defines all hooks for the admin area.
-     * - WPIO_Public. Defines all hooks for the public side of the site.
      * - WPIO_Binary_Detector. Detects available binaries for compression.
      * - WPIO_Compressor. Handles the image compression process.
      *
@@ -113,12 +111,6 @@ class WPIO {
          * The class responsible for defining all actions that occur in the admin area.
          */
         require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-wpio-admin.php';
-
-        /**
-         * The class responsible for defining all actions that occur in the public-facing
-         * side of the site.
-         */
-        require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wpio-public.php';
 
         /**
          * The class responsible for detecting available binaries.
@@ -149,8 +141,6 @@ class WPIO {
      */
     private function set_locale() {
         $plugin_i18n = new WPIO_i18n();
-
-        $this->loader->add_action('plugins_loaded', $plugin_i18n, 'load_plugin_textdomain');
     }
 
     /**
@@ -162,59 +152,26 @@ class WPIO {
      */
     private function define_admin_hooks() {
         $plugin_admin = new WPIO_Admin($this->get_plugin_name(), $this->get_version());
-        $plugin_admin->plugin = $this;
+        $binary_detector = new WPIO_Binary_Detector();
 
-        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
-        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
+        // Add admin menu and settings page
         $this->loader->add_action('admin_menu', $plugin_admin, 'add_plugin_admin_menu');
+        
+        // Register settings
         $this->loader->add_action('admin_init', $plugin_admin, 'register_settings');
         
-        // Add settings link to plugins page
-        $plugin_basename = plugin_basename(plugin_dir_path(dirname(__FILE__)) . 'weirdopress-image-optimizer.php');
-        $this->loader->add_filter('plugin_action_links_' . $plugin_basename, $plugin_admin, 'add_action_links');
-
-        // Media library column for optimization status
-        $this->loader->add_filter('manage_media_columns', $plugin_admin, 'add_media_columns');
-        $this->loader->add_action('manage_media_custom_column', $plugin_admin, 'display_media_column_content', 10, 2);
-
-        // Add optimization information to attachment details
-        $this->loader->add_filter('attachment_fields_to_edit', $plugin_admin, 'add_attachment_fields', 10, 2);
-
-        // Register AJAX handlers
-        $this->loader->add_action('admin_init', $plugin_admin, 'register_ajax_handlers');
-    }
-
-    /**
-     * Register all of the hooks related to the public-facing functionality
-     * of the plugin.
-     *
-     * @since    1.0.0
-     * @access   private
-     */
-    private function define_public_hooks() {
-        $plugin_public = new WPIO_Public($this->get_plugin_name(), $this->get_version());
+        // Add settings link on plugin page
+        $this->loader->add_filter('plugin_action_links_' . WPIO_PLUGIN_BASENAME, $plugin_admin, 'add_action_links');
         
-        // Enqueue public styles and scripts
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+        // Add admin notices for requirements
+        $this->loader->add_action('admin_notices', $plugin_admin, 'display_requirement_warnings');
         
-        // Add content filters for image URL replacement
-        $this->loader->add_action('init', $plugin_public, 'add_content_filters');
+        // Enqueue admin styles and scripts
+        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
+        $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
         
-        // Add filter for srcset handling
-        $this->loader->add_filter('wp_calculate_image_srcset', $plugin_public, 'webp_srcset_filter');
-        
-        // Admin-side modifications for media library
-        $this->loader->add_filter('wp_prepare_attachment_for_js', $plugin_public, 'modify_admin_attachment_for_js', 10, 3);
-        $this->loader->add_action('admin_head', $plugin_public, 'add_admin_styles');
-        $this->loader->add_action('admin_footer', $plugin_public, 'add_admin_scripts');
-        
-        // Also add filter for the actual attachment preview in the editor
-        $this->loader->add_filter('get_image_tag', $plugin_public, 'modify_admin_attachment_preview', 10, 2);
-        $this->loader->add_filter('wp_get_attachment_image', $plugin_public, 'modify_admin_attachment_preview', 10, 2);
-        
-        // Register AJAX handler for checking modern formats
-        $this->loader->add_action('wp_ajax_wpio_check_modern_formats', $plugin_public, 'check_modern_formats_ajax');
+        // Check for binaries on settings page view
+        $this->loader->add_action('admin_init', $binary_detector, 'check_binaries');
     }
 
     /**
@@ -224,7 +181,7 @@ class WPIO {
      * @since    1.0.0
      * @access   private
      */
-    private function define_compressor_hooks() {
+    private function define_compress_hooks() {
         $compressor = new WPIO_Compressor($this->get_plugin_name(), $this->get_version());
         
         // Hook into image uploads
@@ -235,53 +192,11 @@ class WPIO {
     }
 
     /**
-     * Add filters to correctly display WebP/AVIF filenames in the media library
-     * 
-     * @since    1.0.0
-     * @access   private
-     */
-    private function define_attachment_filters() {
-        // Update filenames in attachment UI
-        $this->loader->add_filter('wp_prepare_attachment_for_js', $this, 'update_attachment_filename_for_js', 10, 3);
-    }
-
-    /**
-     * Update attachment filename for JS representation
-     * 
-     * @since    1.0.0
-     * @param    array     $response    Attachment response data
-     * @param    object    $attachment  Attachment object
-     * @param    array     $meta        Attachment meta
-     * @return   array                  Modified response data
-     */
-    public function update_attachment_filename_for_js($response, $attachment, $meta) {
-        if (isset($response['filename'])) {
-            // Check if we have stored a WebP or AVIF conversion
-            if (get_post_meta($attachment->ID, '_wp_attachment_metadata_converted', true)) {
-                $converted_type = get_post_meta($attachment->ID, '_wp_attachment_metadata_converted_type', true);
-                
-                if ($converted_type === 'image/webp') {
-                    $extension = '.webp';
-                    $response['filename'] = preg_replace('/\.(jpe?g|png)$/i', $extension, $response['filename']);
-                    $response['filesizeHumanReadable'] = size_format(filesize(get_post_meta($attachment->ID, '_wp_attachment_metadata_converted_path', true)));
-                } elseif ($converted_type === 'image/avif') {
-                    $extension = '.avif';
-                    $response['filename'] = preg_replace('/\.(jpe?g|png)$/i', $extension, $response['filename']);
-                    $response['filesizeHumanReadable'] = size_format(filesize(get_post_meta($attachment->ID, '_wp_attachment_metadata_converted_path', true)));
-                }
-            }
-        }
-        
-        return $response;
-    }
-
-    /**
      * Run the loader to execute all of the hooks with WordPress.
      *
      * @since    1.0.0
      */
     public function run() {
-        $this->define_attachment_filters();
         $this->loader->run();
     }
 

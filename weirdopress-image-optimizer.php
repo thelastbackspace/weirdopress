@@ -35,7 +35,7 @@ define('WPIO_PLUGIN_BASENAME', plugin_basename(__FILE__));
 /**
  * The code that runs during plugin activation.
  */
-function activate_weirdopress_image_optimizer() {
+function wpio_activate_weirdopress_image_optimizer() {
     require_once WPIO_PLUGIN_DIR . 'includes/class-wpio-activator.php';
     WPIO_Activator::activate();
 }
@@ -43,13 +43,13 @@ function activate_weirdopress_image_optimizer() {
 /**
  * The code that runs during plugin deactivation.
  */
-function deactivate_weirdopress_image_optimizer() {
+function wpio_deactivate_weirdopress_image_optimizer() {
     require_once WPIO_PLUGIN_DIR . 'includes/class-wpio-deactivator.php';
     WPIO_Deactivator::deactivate();
 }
 
-register_activation_hook(__FILE__, 'activate_weirdopress_image_optimizer');
-register_deactivation_hook(__FILE__, 'deactivate_weirdopress_image_optimizer');
+register_activation_hook(__FILE__, 'wpio_activate_weirdopress_image_optimizer');
+register_deactivation_hook(__FILE__, 'wpio_deactivate_weirdopress_image_optimizer');
 
 /**
  * The core plugin class that is used to define internationalization,
@@ -60,9 +60,9 @@ require_once WPIO_PLUGIN_DIR . 'includes/class-wpio.php';
 /**
  * Begins execution of the plugin.
  */
-function run_weirdopress_image_optimizer() {
+function wpio_run_weirdopress_image_optimizer() {
     $plugin = new WPIO();
     $plugin->run();
 }
 
-run_weirdopress_image_optimizer(); 
+wpio_run_weirdopress_image_optimizer(); 

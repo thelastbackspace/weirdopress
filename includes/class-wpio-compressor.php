@@ -69,15 +69,6 @@ class WPIO_Compressor {
     private $settings;
     
     /**
-     * PHP optimizer instance.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      WPIO_PHP_Optimizer    $php_optimizer    PHP optimizer instance.
-     */
-    private $php_optimizer;
-    
-    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -90,12 +81,6 @@ class WPIO_Compressor {
         $this->binary_detector = new WPIO_Binary_Detector();
         $this->file_manager = new WPIO_File_Manager();
         $this->settings = get_option('wpio_settings', []);
-        
-        // Initialize the PHP optimizer if exec is not available
-        if (!function_exists('exec')) {
-            require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wpio-php-optimizer.php';
-            $this->php_optimizer = new WPIO_PHP_Optimizer();
-        }
     }
     
     /**
@@ -174,11 +159,6 @@ class WPIO_Compressor {
             return false;
         }
         
-        // Check if exec() is disabled - if so, use PHP optimizer
-        if (!function_exists('exec') && isset($this->php_optimizer)) {
-            return $this->php_optimizer->optimize_image($file_path);
-        }
-        
         // Backup original if enabled
         $this->file_manager->backup_original($file_path);
         
@@ -224,18 +204,13 @@ class WPIO_Compressor {
         
         // Log optimization if enabled
         if ($optimized && isset($this->settings['log_optimizations']) && $this->settings['log_optimizations']) {
-            // Get attachment ID from the file path
-            $attachment_id = $this->get_attachment_id_from_path($file_path);
-            
             $this->file_manager->log_optimization([
-                'file_path' => $file_path,
-                'attachment_id' => $attachment_id,
-                'original_type' => strtoupper($file_ext),
+                'file' => $file_path,
+                'type' => $file_ext,
                 'original_size' => $optimized['original_size'],
                 'optimized_size' => $optimized['optimized_size'],
                 'saved_bytes' => $optimized['saved_bytes'],
-                'savings_percent' => $optimized['saved_percent'],
-                'mime_type' => $this->get_mime_type($file_path)
+                'saved_percent' => $optimized['saved_percent'],
             ]);
         }
         
@@ -375,7 +350,6 @@ class WPIO_Compressor {
     private function convert_to_webp($file_path) {
         $webp_path = $this->file_manager->get_destination_path($file_path, 'webp');
         $quality = isset($this->settings['jpeg_quality']) ? intval($this->settings['jpeg_quality']) : 75;
-        $success = false;
         
         // Try cwebp if available
         if ($this->binary_detector->is_binary_available('cwebp')) {
@@ -388,163 +362,12 @@ class WPIO_Compressor {
             exec($cmd, $output, $return_var);
             
             if ($return_var === 0 && file_exists($webp_path)) {
-                $success = true;
+                return $webp_path;
             }
         }
         
-        // Fallback to GD/Imagick for WebP conversion if binary method failed
-        if (!$success) {
-            $success = $this->convert_to_webp_with_gd($file_path, $webp_path, $quality);
-        }
-        
-        // If conversion was successful, update attachment metadata
-        if ($success && file_exists($webp_path)) {
-            // Try to get attachment ID from file path
-            $attachment_id = $this->get_attachment_id_from_path($file_path);
-            
-            if ($attachment_id) {
-                // Update attachment metadata to reflect WebP file
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted', true);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_original', $file_path);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted_path', $webp_path);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted_type', 'image/webp');
-                
-                // Update file URL and path in attachment data
-                $upload_dir = wp_upload_dir();
-                $relative_path = str_replace($upload_dir['basedir'] . '/', '', $webp_path);
-                
-                // Only replace the extension in the database if auto_replace is enabled
-                if (isset($this->settings['auto_replace']) && $this->settings['auto_replace']) {
-                    update_post_meta($attachment_id, '_wp_attached_file_webp', $relative_path);
-                    
-                    // Update the main file reference in attachment metadata
-                    $metadata = wp_get_attachment_metadata($attachment_id);
-                    if (is_array($metadata) && isset($metadata['file'])) {
-                        $original_filename = basename($metadata['file']);
-                        $webp_filename = basename($webp_path);
-                        $metadata['file_original'] = $metadata['file'];
-                        $metadata['file'] = str_replace($original_filename, $webp_filename, $metadata['file']);
-                        $metadata['mime_type_original'] = get_post_mime_type($attachment_id);
-                        $metadata['mime_type'] = 'image/webp';
-                        
-                        // Update size info for the converted file
-                        $webp_filesize = filesize($webp_path);
-                        if ($webp_filesize) {
-                            $metadata['filesize_original'] = isset($metadata['filesize']) ? $metadata['filesize'] : filesize($file_path);
-                            $metadata['filesize'] = $webp_filesize;
-                        }
-                        
-                        // Update the original filename in the metadata to show WebP extension
-                        if (isset($metadata['image_meta']) && isset($metadata['image_meta']['title'])) {
-                            $metadata['image_meta']['title'] = str_replace('.jpg', '.webp', $metadata['image_meta']['title']);
-                            $metadata['image_meta']['title'] = str_replace('.jpeg', '.webp', $metadata['image_meta']['title']);
-                            $metadata['image_meta']['title'] = str_replace('.png', '.webp', $metadata['image_meta']['title']);
-                        }
-                        
-                        wp_update_attachment_metadata($attachment_id, $metadata);
-                        
-                        // Also update the post mime type and title/name
-                        $post_data = array(
-                            'ID' => $attachment_id,
-                            'post_mime_type' => 'image/webp'
-                        );
-                        
-                        // Update the post title if it contains the file extension
-                        $attachment = get_post($attachment_id);
-                        if ($attachment && $attachment->post_title) {
-                            $post_title = $attachment->post_title;
-                            $post_title = str_replace('.jpg', '.webp', $post_title);
-                            $post_title = str_replace('.jpeg', '.webp', $post_title);
-                            $post_title = str_replace('.png', '.webp', $post_title);
-                            if ($post_title !== $attachment->post_title) {
-                                $post_data['post_title'] = $post_title;
-                            }
-                        }
-                        
-                        wp_update_post($post_data);
-                    }
-                }
-            }
-            
-            return $webp_path;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Get attachment ID from file path.
-     * 
-     * @since    1.0.0
-     * @param    string    $file_path    Path to the file.
-     * @return   int|false               Attachment ID or false if not found.
-     */
-    private function get_attachment_id_from_path($file_path) {
-        $upload_dir = wp_upload_dir();
-        
-        // Make path relative to the upload directory
-        $relative_path = str_replace($upload_dir['basedir'] . '/', '', $file_path);
-        
-        global $wpdb;
-        
-        // Find attachment by comparing the path in the metadata
-        $attachment_id = $wpdb->get_var($wpdb->prepare(
-            "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_wp_attached_file' AND meta_value = %s",
-            $relative_path
-        ));
-        
-        // If not found, try searching in modified attachment metadata
-        if (!$attachment_id) {
-            $attachment_id = $wpdb->get_var($wpdb->prepare(
-                "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_wp_attachment_metadata' AND meta_value LIKE %s",
-                '%' . $wpdb->esc_like($relative_path) . '%'
-            ));
-        }
-        
-        return $attachment_id ? (int) $attachment_id : false;
-    }
-    
-    /**
-     * Get mime type of a file.
-     * 
-     * @since    1.0.0
-     * @param    string    $file_path    Path to the file.
-     * @return   string                  Mime type.
-     */
-    private function get_mime_type($file_path) {
-        if (!file_exists($file_path)) {
-            return '';
-        }
-        
-        $mime_type = '';
-        
-        // Try using WordPress function first
-        if (function_exists('wp_check_filetype')) {
-            $file_info = wp_check_filetype($file_path);
-            $mime_type = $file_info['type'];
-        }
-        
-        // If WordPress function didn't work, try PHP's function
-        if (empty($mime_type) && function_exists('mime_content_type')) {
-            $mime_type = mime_content_type($file_path);
-        }
-        
-        // If all else fails, determine by extension
-        if (empty($mime_type)) {
-            $ext = $this->file_manager->get_extension($file_path);
-            $mime_map = [
-                'jpg' => 'image/jpeg',
-                'jpeg' => 'image/jpeg',
-                'png' => 'image/png',
-                'webp' => 'image/webp',
-                'avif' => 'image/avif',
-                'gif' => 'image/gif',
-            ];
-            
-            $mime_type = isset($mime_map[$ext]) ? $mime_map[$ext] : '';
-        }
-        
-        return $mime_type;
+        // Fallback to GD/Imagick for WebP conversion
+        return $this->convert_to_webp_with_gd($file_path, $webp_path, $quality);
     }
     
     /**
@@ -557,7 +380,6 @@ class WPIO_Compressor {
     private function convert_to_avif($file_path) {
         $avif_path = $this->file_manager->get_destination_path($file_path, 'avif');
         $quality = isset($this->settings['jpeg_quality']) ? intval($this->settings['jpeg_quality']) : 75;
-        $success = false;
         
         // Try avifenc if available
         if ($this->binary_detector->is_binary_available('avifenc')) {
@@ -572,82 +394,11 @@ class WPIO_Compressor {
             exec($cmd, $output, $return_var);
             
             if ($return_var === 0 && file_exists($avif_path)) {
-                $success = true;
+                return $avif_path;
             }
         }
         
-        // If conversion was successful, update attachment metadata
-        if ($success && file_exists($avif_path)) {
-            // Try to get attachment ID from file path
-            $attachment_id = $this->get_attachment_id_from_path($file_path);
-            
-            if ($attachment_id) {
-                // Update attachment metadata to reflect AVIF file
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted', true);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_original', $file_path);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted_path', $avif_path);
-                update_post_meta($attachment_id, '_wp_attachment_metadata_converted_type', 'image/avif');
-                
-                // Update file URL and path in attachment data
-                $upload_dir = wp_upload_dir();
-                $relative_path = str_replace($upload_dir['basedir'] . '/', '', $avif_path);
-                
-                // Only replace the extension in the database if auto_replace is enabled
-                if (isset($this->settings['auto_replace']) && $this->settings['auto_replace']) {
-                    update_post_meta($attachment_id, '_wp_attached_file_avif', $relative_path);
-                    
-                    // Update the main file reference in attachment metadata
-                    $metadata = wp_get_attachment_metadata($attachment_id);
-                    if (is_array($metadata) && isset($metadata['file'])) {
-                        $original_filename = basename($metadata['file']);
-                        $avif_filename = basename($avif_path);
-                        $metadata['file_original'] = $metadata['file'];
-                        $metadata['file'] = str_replace($original_filename, $avif_filename, $metadata['file']);
-                        $metadata['mime_type_original'] = get_post_mime_type($attachment_id);
-                        $metadata['mime_type'] = 'image/avif';
-                        
-                        // Update size info for the converted file
-                        $avif_filesize = filesize($avif_path);
-                        if ($avif_filesize) {
-                            $metadata['filesize_original'] = isset($metadata['filesize']) ? $metadata['filesize'] : filesize($file_path);
-                            $metadata['filesize'] = $avif_filesize;
-                        }
-                        
-                        // Update the original filename in the metadata to show AVIF extension
-                        if (isset($metadata['image_meta']) && isset($metadata['image_meta']['title'])) {
-                            $metadata['image_meta']['title'] = str_replace('.jpg', '.avif', $metadata['image_meta']['title']);
-                            $metadata['image_meta']['title'] = str_replace('.jpeg', '.avif', $metadata['image_meta']['title']);
-                            $metadata['image_meta']['title'] = str_replace('.png', '.avif', $metadata['image_meta']['title']);
-                        }
-                        
-                        wp_update_attachment_metadata($attachment_id, $metadata);
-                        
-                        // Also update the post mime type and title/name
-                        $post_data = array(
-                            'ID' => $attachment_id,
-                            'post_mime_type' => 'image/avif'
-                        );
-                        
-                        // Update the post title if it contains the file extension
-                        $attachment = get_post($attachment_id);
-                        if ($attachment && $attachment->post_title) {
-                            $post_title = $attachment->post_title;
-                            $post_title = str_replace('.jpg', '.avif', $post_title);
-                            $post_title = str_replace('.jpeg', '.avif', $post_title);
-                            $post_title = str_replace('.png', '.avif', $post_title);
-                            if ($post_title !== $attachment->post_title) {
-                                $post_data['post_title'] = $post_title;
-                            }
-                        }
-                        
-                        wp_update_post($post_data);
-                    }
-                }
-            }
-            
-            return $avif_path;
-        }
-        
+        // No reliable fallback for AVIF conversion in PHP yet
         return false;
     }
     

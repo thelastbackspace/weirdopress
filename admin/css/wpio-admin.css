@@ -452,8 +452,101 @@ td.column-wpio_status:hover .wpio-details {
         display: block;
         overflow-x: auto;
     }
-    
+
     .column-wpio_status {
         width: auto;
     }
+}
+
+/* Media library format toggle styles (from public class) */
+.wpio-format-toggle {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.wpio-toggle-format {
+    margin-bottom: 10px !important;
+}
+
+/* Bulk optimization styles */
+.wpio-stats-box {
+    background: #f9f9f9;
+    padding: 15px;
+    margin: 15px 0;
+    border-left: 4px solid #0073aa;
+}
+
+.wpio-stats-box h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #23282d;
+}
+
+.wpio-stats-box p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.wpio-bulk-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+#wpio-bulk-progress {
+    font-weight: bold;
+    color: #0073aa;
+}
+
+#wpio-bulk-log {
+    background: #1e1e1e;
+    color: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.wpio-log-item {
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+}
+
+.wpio-log-item:last-child {
+    border-bottom: none;
+}
+
+.wpio-log-item.success {
+    color: #46b450;
+}
+
+.wpio-log-item.error {
+    color: #dc3232;
+}
+
+.wpio-log-item.complete {
+    color: #00a32a;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+/* Custom quality slider */
+#wpio-custom-quality {
+    background: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+#wpio_custom_quality {
+    margin: 0 10px;
+}
+
+#wpio_quality_value {
+    font-weight: bold;
+    color: #0073aa;
 } 

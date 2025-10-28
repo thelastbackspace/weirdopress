@@ -1,8 +1,8 @@
 === WeirdoPress Image Optimizer ===
-Contributors: weirdopress
+Contributors: shubhwadekar,weirdopress
 Tags: image, compression, webp, avif, performance, optimization
 Requires at least: 5.6
-Tested up to: 6.4
+Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: MIT
