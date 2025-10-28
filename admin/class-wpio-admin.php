@@ -543,15 +543,21 @@ class WPIO_Admin {
             AND post_mime_type LIKE 'image/%'
         ");
 
-        // Get optimized images from logs
-        $logs = get_option('wpio_optimization_logs', []);
-        $optimized_count = count($logs);
+        // Get optimized images from post meta
+        $optimized_images = $wpdb->get_results("
+            SELECT post_id, meta_value
+            FROM {$wpdb->postmeta}
+            WHERE meta_key = '_wpio_optimization_data'
+        ");
+
+        $optimized_count = count($optimized_images);
 
         // Calculate space saved
         $space_saved = 0;
-        foreach ($logs as $log) {
-            if (isset($log['original_size']) && isset($log['optimized_size'])) {
-                $space_saved += ($log['original_size'] - $log['optimized_size']);
+        foreach ($optimized_images as $image) {
+            $data = maybe_unserialize($image->meta_value);
+            if (is_array($data) && isset($data['original_size']) && isset($data['optimized_size'])) {
+                $space_saved += ($data['original_size'] - $data['optimized_size']);
             }
         }
 
